@@ -1,3 +1,181 @@
+<div align="center">
+
+# 🔧 REVIVED — Working on V Rising 1.1.13
+
+### Fixed and maintained by [Fartonice](https://github.com/Fartonice-Dev)
+
+<!-- PHOTO: replace the URL below with your image link.
+     Easiest way: drag your photo into any GitHub issue comment,
+     GitHub uploads it and gives you a link, paste that link here. -->
+<img src="PUT_YOUR_PHOTO_LINK_HERE" width="150" />
+
+**[github.com/Fartonice-Dev/LeadAHorseToWater](https://github.com/Fartonice-Dev/LeadAHorseToWater)**
+
+*This mod sat broken for over two years. It works again.*
+
+</div>
+
+---
+
+## ⚠️ READ THIS FIRST — Bloodstone is GONE
+
+**This version does NOT use Bloodstone. Do not install it.**
+
+The old version required `deca-Bloodstone`. That library is deprecated and it is
+**actively harmful** on V Rising 1.1.x:
+
+- On your **server** it breaks *every network event*. Chat commands stop working,
+  achievement rewards can't be claimed, items can't be dropped or moved. The server
+  looks fine but nothing gets through.
+- On your **client** it crashes you straight to desktop the moment you connect.
+
+If you have Bloodstone installed for this mod, **remove it.** This version doesn't
+need it and runs better without it.
+
+
+---
+
+## 🔍 What was broken, and what I changed
+
+Total time to diagnose and fix: **about 7 and a half hours.** Three separate faults,
+stacked on top of each other. Fixing any one alone would not have worked.
+
+### 1. The mod hooked a game system that no longer exists
+
+It patched `ProjectM.FeedableInventorySystem_Update`. Stunlock removed it. So the
+mod's entire engine never started:
+
+```
+TypeLoadException: Could not load type 'ProjectM.FeedableInventorySystem_Update'
+   at LeadAHorseToWater.Plugin.OnGameInitialized()
+```
+
+The mod loaded, showed no error to the player, and then quietly did nothing.
+
+**Fix:** hook `CheckInSunSystem` instead — a system that still exists and updates
+constantly. This solution is **cheesasaurus's**, from their open PR #21.
+
+### 2. It was built against ancient game bindings
+
+```
+VRising.Unhollowed.Client   0.6.5          ->  1.1.*
+BepInEx                     6.0.0-be.668   ->  6.0.0-be.733
+```
+
+### 3. Bloodstone — the one that really mattered
+
+This was the hard one to find, because Bloodstone *reports* that it loaded fine:
+
+```
+[Info :Bloodstone] Bloodstone v0.2.2 loaded.
+```
+
+Then under real traffic it fails on every single network packet:
+
+```
+MissingMethodException: Method not found:
+'Void Stunlock.Network.NetBufferOut.Write(Byte)'
+   at Bloodstone.Network.SerializationHooks.SerializeAndSendServerEventsSystem_Patch
+
+MissingMethodException: Method not found:
+'UInt32 Stunlock.Network.NetBufferIn.ReadUInt32()'
+   at Bloodstone.Network.SerializationHooks.DeserializeHook
+```
+
+Hundreds per minute. Bloodstone hooks the network serialization layer, and those
+game methods don't exist anymore.
+
+**Fix:** removed Bloodstone entirely. The mod only ever used three things from it —
+`VWorld.Server`, `VExtensions.ActionRef`, and `Entity.WithComponentData`. All three
+are now local replacements in `Compat/`, roughly 60 lines total. Behaviour unchanged.
+
+`[BepInProcess("VRisingServer.exe")]` replaces Bloodstone's old IsServer/IsClient
+checks, which also means this can no longer be loaded onto a client by accident.
+
+### Files changed
+
+```
+NEW      Compat/VWorld.cs
+NEW      Compat/VExtensions.cs
+NEW      Compat/EntityExtensions.cs
+RENAMED  Patches/FeedableInventorySystem_Update_Patch.cs
+            -> Patches/LeaadAHorseToWaterSystem.cs
+EDITED   Plugin.cs, Commands.cs, HorseUtil.cs, ECSExtensions.cs,
+         Settings.cs, LeadAHorseToWater.csproj, Processes/*, Patches/*
+```
+
+
+---
+
+## 📦 Install
+
+**This is a SERVER-SIDE mod. It goes on the server only. Never on your game client.**
+
+### What you need on the server
+
+| Mod | Required? |
+|---|---|
+| BepInEx (BepInExPack_V_Rising) | Yes |
+| VampireCommandFramework | Yes — for the commands |
+| ~~Bloodstone~~ | **NO. Removed. Do not install.** |
+
+### Steps
+
+1. Install **BepInEx** on your server if you haven't already
+2. Install **VampireCommandFramework** into `BepInEx/plugins`
+3. Drop `LeadAHorseToWater.dll` into `BepInEx/plugins`
+4. Start the server
+
+That's it. There is no client-side step.
+
+### Check it worked
+
+In the server log you should see:
+
+```
+[Info :   BepInEx] Loading [LeadAHorseToWater 0.9.0]
+[Info :LeadAHorseToWater] Plugin LeadAHorseToWater is loaded! (Bloodstone-free build)
+[Info :LeadAHorseToWater] Trying to find VCF:
+[Warning:LeadAHorseToWater] VCF Version: 0.11.0
+```
+
+Then in game type `.help horse` — if you get a command list back, you're running.
+
+---
+
+## 🙏 Credits
+
+This is a community revival. **Most of the code here is not mine.**
+
+**[decaprime](https://github.com/decaprime/LeadAHorseToWater) — original author.**
+Wrote the mod. The idea, the well detection, breeding, all the commands. Without
+decaprime there is nothing here to fix. Thank you for building it.
+
+**[cheesasaurus](https://github.com/cheesasaurus/LeadAHorseToWater) — V Rising 1.0 compatibility ([PR #21](https://github.com/decaprime/LeadAHorseToWater/pull/21)).**
+Did the hardest diagnostic work. Found the dead `FeedableInventorySystem_Update`
+hook and worked out that `CheckInSunSystem` could replace it — and left a comment
+listing every other system they tried that *didn't* work, which saved me hours of
+repeating it. Also improved breeding and horse-killing. Their PR has been open and
+unmerged since September 2024. **I built directly on it.**
+
+**The tools underneath:** the **BepInEx** team, **deca** for VampireCommandFramework,
+and **Thunderstore** for hosting the V Rising modding community.
+
+**Fartonice (me):** removed the Bloodstone dependency, rebuilt against V Rising 1.1.x,
+tested on a live dedicated server, packaged it back up.
+
+### A note on licensing
+
+decaprime's repository has no LICENSE file. This fork exists to keep a good mod alive
+for the community, with full credit and links back to the original authors.
+
+**decaprime — if you'd prefer this taken down, changed, or merged back into your repo,
+just say the word and I'll do it.** No argument. It's your mod.
+
+
+---
+---
+
 # 🐴 Lead A Horse To Water
 
 A V-Rising mod that lets your horses drink water from wells. Now with horse breeding and other commands.
@@ -28,6 +206,9 @@ For commands to load you must have [VampireCommandFramework](https://github.com/
 
 This process takes two horses and consumes <ins>_BreedingRequiredItem_</ins> * <ins>_BreedingCostAmount_</ins> from the player's inventory. The resulting horse will be a random mix of the two parents' stats as a 50/50 chance of inheriting each trait from either parent. Then randomly +/- <ins>_MutationRange_</ins> is applied based on the max stat for each attribute. Finally values are capped at <ins>_MaxSpeed_</ins>, <ins>_MaxAcceleration_</ins>, <ins>_MaxRotation_</ins>. The resulting horse will be named after the first parent.
 
+> **Tip:** the default breeding item is the **twilight snapper** (prefab `-570287766`).
+> You can change it to any item via `BreedingRequiredItem` in the config.
+
 ![image](https://user-images.githubusercontent.com/62450933/190880543-92d31267-34ec-4292-bb03-b12feee5a95b.png)
 
 #### `.horse tag-stats [horse=]`
@@ -46,7 +227,7 @@ Powerful admin rename, this allows you do escape normal naming restrictions and 
 Whistle tries to brings the horse to you, warp teleports you to the horse.
 
 #### 🔒 `.horse speed [horse=] (speed)`
-#### 🔒 `.horse acceleration [horse=] (acceleration)` 
+#### 🔒 `.horse acceleration [horse=] (acceleration)`
 #### 🔒 `.horse rotation [horse=] (rotation)`
 
 Set the horse's stats. These values are **not** capped by <ins>_MaxSpeed_</ins>, <ins>_MaxAcceleration_</ins>, or <ins>_MaxRotation_</ins>. Note that the game represents rotation as 10x the value displayed in the UI but the commands handle this for you and you should refer to the values as you see them in the UI.
@@ -66,6 +247,21 @@ Make all horses within the `radius` hungry enough to feed. (depletes satiety)
 #### 🔒 `.horse spawn [count=1]`
 
 Spawns either one or `count` horses around you.
+
+
+## 🚰 About the wells
+
+The mod does **not** use wells out in the world. It looks for **castle fountains**
+placed inside your castle and connected to a **Castle Heart**.
+
+By default it accepts the **Stone** and **Large** fountains. Options are
+`stone, iron, bronze, small, large` — set them in `EnabledWellPrefabs`.
+
+The horse must be within **`DistanceRequired`** of the fountain. Default is `5`,
+which is about **one tile** — so right up against it.
+
+When a horse is drinking, a **♻** is added to the front of its name (turn this off
+with `EnableRename = false`).
 
 # Configurable Values
 ```ini
@@ -136,3 +332,42 @@ EnabledWellPrefabs = Stone, Large
 
 # Demo Video (only viewable on github)
 https://user-images.githubusercontent.com/62450933/175365529-f6ade327-dbd0-4500-b840-128ac52cefe7.mp4
+
+
+---
+
+<div align="center">
+
+## ❤️ Support this revival
+
+This mod was broken for over two years. I spent about **7 and a half hours** digging
+through logs, tracing dead game systems, and tearing out a deprecated library to get
+it running again — then tested it on a live server until the horses actually drank.
+
+**I'll do my best to keep it up to date as V Rising keeps patching.**
+
+If it saved your server, feel free to throw any amount my way. Never expected,
+always appreciated.
+
+# 💵 Cash App — [$Fartonice1081](https://cash.app/$Fartonice1081)
+
+<!-- Optional: drag your Cash App QR image into a GitHub issue comment,
+     copy the link it gives you, and paste it below to show the QR code here.
+<img src="PUT_YOUR_QR_LINK_HERE" width="220" />
+-->
+
+---
+
+*And if you'd rather thank the people who wrote the original mod — please go support*
+***[decaprime](https://github.com/decaprime)*** *and* ***[cheesasaurus](https://github.com/cheesasaurus)***.
+*They earned it first.*
+
+---
+
+**Tested working on V Rising 1.1.13 with a dedicated server running 13 other mods.**
+
+*Horses drink. Commands work. Breeding works.*
+
+🐴
+
+</div>
