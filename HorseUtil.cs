@@ -2,8 +2,11 @@ namespace LeadAHorseToWater.VCFCompat;
 
 using System.Collections.Generic;
 using System.Linq;
-using Bloodstone.API;
+using LeadAHorseToWater.Compat;
+using Il2CppInterop.Runtime;
 using ProjectM;
+using ProjectM.Network;
+using Stunlock.Core;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -12,6 +15,8 @@ using Unity.Transforms;
 internal static class HorseUtil
 {
 	private static Entity empty_entity = new Entity();
+
+	public static PrefabGUID DeadVampHorseBuffGuid = new PrefabGUID(525019977);
 
 	private static Dictionary<string, PrefabGUID> HorseGuids = new()
 	{
@@ -28,14 +33,14 @@ internal static class HorseUtil
 		//var horses = _r.Next(3);
 		var horse = HorseGuids["Regular"];
 		// TODO: Cache and Improve (np now :P)
-		VWorld.Server.GetExistingSystem<UnitSpawnerUpdateSystem>().SpawnUnit(empty_entity, horse, localPos, countlocal, 1, 2, -1);
+		VWorld.Server.GetExistingSystemManaged<UnitSpawnerUpdateSystem>().SpawnUnit(empty_entity, horse, localPos, countlocal, 1, 2, -1);
 	}
 
 	internal static NativeArray<Entity> GetHorses()
 	{
 		var horseQuery = VWorld.Server.EntityManager.CreateEntityQuery(new EntityQueryDesc()
 		{
-			All = new[] { ComponentType.ReadWrite<FeedableInventory>(),
+			All = new[] {
 					ComponentType.ReadWrite<NameableInteractable>(),
 					ComponentType.ReadWrite<Mountable>(),
 					ComponentType.ReadOnly<LocalToWorld>(),
@@ -72,7 +77,7 @@ internal static class HorseUtil
 	internal static bool isTamed(Entity e)
 	{
 		EntityManager em = VWorld.Server.EntityManager;
-		ComponentDataFromEntity<Team> getTeam = VWorld.Server.EntityManager.GetComponentDataFromEntity<Team>();
+		ComponentLookup<Team> getTeam = VWorld.Server.EntityManager.GetComponentLookup<Team>(true);
 
 		if (!em.HasComponent<Team>(e)) return false;
 		var teamhorse = getTeam[e];
@@ -100,5 +105,37 @@ internal static class HorseUtil
 		}
 
 		return results;
+	}
+
+    /// <summary>
+	/// Kill a horse without dropping any loot
+	/// </summary>
+	/// <param name="horse"></param>
+	internal static void KillWithNoDrops(Entity horse)
+	{
+		if (horse.Has<Immortal>()) {
+			// Don't actually kill a vampire horse, otherwise the owner won't be able to resummon it.
+			// Instead, the game has a special buff for temporarily "killing" vamp horses.
+			var des = VWorld.Server.GetExistingSystemManaged<DebugEventsSystem>();
+			var buffEvent = new ApplyBuffDebugEvent()
+			{
+				BuffPrefabGUID = DeadVampHorseBuffGuid
+			};
+
+			// using FromCharacter like this feels dirty but it works. Manually managing a buff entity for a BuffBuffer to reference would be wayyyyy too complicated.
+			var fromCharacter = new FromCharacter()
+			{
+				User = horse,
+				Character = horse
+			};
+			des.ApplyBuff(fromCharacter, buffEvent);
+			return;
+		}
+
+		horse.With((ref Health t) =>
+		{
+			t.IsDead = true;
+		});
+		VWorld.Server.EntityManager.AddComponent(horse, Il2CppType.Of<Dead>());
 	}
 }

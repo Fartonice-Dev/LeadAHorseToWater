@@ -59,6 +59,10 @@ Removes the horse immediately without any loot or corpse.
 
 **WARNING**: This command will remove horses within the radius of the player. It choose `percentage` of the horses within the `radius`. This command is very useful for cleaning up a large number of horses. It is recommended to use a small radius to start. The default radius of 5 is about 1 tile. The default percentage 1 means 100% of the horses within the radius will be removed.
 
+#### 🔒 `.horse famish [radius=5]`
+
+Make all horses within the `radius` hungry enough to feed. (depletes satiety)
+
 #### 🔒 `.horse spawn [count=1]`
 
 Spawns either one or `count` horses around you.
@@ -67,16 +71,6 @@ Spawns either one or `count` horses around you.
 ```ini
 [Breeding]
 
-## Enables the cooldown for breeding horses.
-# Setting type: Boolean
-# Default value: true
-EnableBreedingCooldown = true
-
-## This is the cooldown in seconds for breeding horses.
-# Setting type: Int32
-# Default value: 600
-BreedingCooldown = 600
-
 ## This prefab is consumed as a cost to breed horses.
 # Setting type: Int32
 # Default value: -570287766
@@ -84,8 +78,8 @@ BreedingRequiredItem = -570287766
 
 ## This is the name of the required item that will be consumed.
 # Setting type: String
-# Default value: special fish
-BreedingCostItemName = special fish
+# Default value: special fish (twilight snapper)
+BreedingCostItemName = special fish (twilight snapper)
 
 ## This is the amount of the required item consumed.
 # Setting type: Int32
