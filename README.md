@@ -73,10 +73,9 @@ Spawns either one or `count` horses around you.
 
 ## 🚰 About the wells
 
-The mod does **not** use wells out in the world. It looks for **castle fountains**
-placed inside your castle and connected to a **Castle Heart**.
+The mod does **not** use wells out in the world, it uses the wells built connected to a castle.
 
-By default it accepts the **Stone** and **Large** fountains. Options are
+By default it considers the **Stone** and **Large** fountains. Options are
 `stone, iron, bronze, small, large` — set them in `EnabledWellPrefabs`.
 
 The horse must be within **`DistanceRequired`** of the fountain. Default is `5`,
@@ -154,42 +153,3 @@ EnabledWellPrefabs = Stone, Large
 
 # Demo Video (only viewable on github)
 https://user-images.githubusercontent.com/62450933/175365529-f6ade327-dbd0-4500-b840-128ac52cefe7.mp4
-
-
----
-
-<div align="center">
-
-## ❤️ Support this revival
-
-This mod was broken for over two years. I spent about **7 and a half hours** digging
-through logs, tracing dead game systems, and tearing out a deprecated library to get
-it running again — then tested it on a live server until the horses actually drank.
-
-**I'll do my best to keep it up to date as V Rising keeps patching.**
-
-If it saved your server, feel free to throw any amount my way. Never expected,
-always appreciated.
-
-# 💵 Cash App — [$Fartonice1081](https://cash.app/$Fartonice1081)
-
-<!-- Optional: drag your Cash App QR image into a GitHub issue comment,
-     copy the link it gives you, and paste it below to show the QR code here.
-<img src="PUT_YOUR_QR_LINK_HERE" width="220" />
--->
-
----
-
-*And if you'd rather thank the people who wrote the original mod — please go support*
-***[decaprime](https://github.com/decaprime)*** *and* ***[cheesasaurus](https://github.com/cheesasaurus)***.
-*They earned it first.*
-
----
-
-**Tested working on V Rising 1.1.13 with a dedicated server running 13 other mods.**
-
-*Horses drink. Commands work. Breeding works.*
-
-🐴
-
-</div>
