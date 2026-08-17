@@ -1,7 +1,6 @@
 namespace LeadAHorseToWater.VCFCompat;
 
 using System.Collections.Generic;
-using System.Linq;
 using LeadAHorseToWater.Compat;
 using Il2CppInterop.Runtime;
 using ProjectM;
@@ -27,10 +26,8 @@ internal static class HorseUtil
 	};
 
 
-	private static System.Random _r = new System.Random();
 	internal static void SpawnHorse(int countlocal, float3 localPos)
 	{
-		//var horses = _r.Next(3);
 		var horse = HorseGuids["Regular"];
 		// TODO: Cache and Improve (np now :P)
 		VWorld.Server.GetExistingSystemManaged<UnitSpawnerUpdateSystem>().SpawnUnit(empty_entity, horse, localPos, countlocal, 1, 2, -1);
@@ -74,19 +71,6 @@ internal static class HorseUtil
 		return closestHorse;
 	}
 
-	internal static bool isTamed(Entity e)
-	{
-		EntityManager em = VWorld.Server.EntityManager;
-		ComponentLookup<Team> getTeam = VWorld.Server.EntityManager.GetComponentLookup<Team>(true);
-
-		if (!em.HasComponent<Team>(e)) return false;
-		var teamhorse = getTeam[e];
-		var isUnit = Team.IsInUnitTeam(teamhorse);
-
-		// Wild horses are Units, appear to no longer be units after you ride them.
-		return !isUnit;
-
-	}
 
 	internal static List<Entity> ClosestHorses(Entity e, float radius = 5f)
 	{
